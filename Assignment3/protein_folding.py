@@ -9,7 +9,8 @@ class ProteinFolding:
         """ Initialization function"""
         self.N = N
         self.temp = T
-        self.pos = self.place_monomers()
+        self.pos = np.zeros((self.N,2),dtype=int) 
+        # self.pos = self.place_monomers()
         self.types = self.gen_types()
         self.int_mat = self.interaction_matrix()
         self.nn = self.find_nn()
@@ -52,7 +53,7 @@ class ProteinFolding:
                 # Raise an exception if an invalid move is found
                 raise ValueError(f"Unable to place monomer {i}")
 
-        return pos
+        self.pos = pos
 
     def find_nn(self):
         """ 
@@ -82,7 +83,7 @@ class ProteinFolding:
     @staticmethod
     def interaction_matrix():
         """ Create interaction matrix, make sure it stays constant """
-        np.random.seed(10)
+        # np.random.seed(10)
         int_mat = np.random.uniform(-4,-2,(20,20))
         # Ensure that the matrix is symmetric
         return (int_mat + int_mat.T)/2
@@ -108,16 +109,35 @@ class ProteinFolding:
 
     def is_valid_move(self, index, move):
         """ Check if a move is valid and don't result in overlap """
+        # Check for overlap
         pos_new = self.pos[index] + move
-        
-        # Check for no overlap with other positions
-        if any(np.array_equal(pos_new,p) for p in self.pos if not np.array_equal(p, self.pos[index])):
+
+        print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
+        # Check for diagonal moves
+        if abs(move[0]) == abs(move[1]) == 1:
+            print("DIAGONAL!!!!!!!!!")
             return False
+
+        if any(np.array_equal(pos_new, pos) for pos in self.pos):
+            print("Move results in overlap")
+            return False
+        
+        
+        print("OK")
         return True
+
+        # Check that position is within the bounds
     
-    @staticmethod
-    def get_mc_directions():
-        return [(1,1),(-1,1),(1,-1),(-1,-1)]
+    def metropolis_criterion(self,current_energy,new_energy):
+        """ Metropolis criterion used to determine if a move should be accepted """
+        dE = new_energy - current_energy
+        
+        if dE < 0:
+            return True
+        else:
+            return np.random.rand() < np.exp(-dE/self.temp) 
+
+
 
 
     def perform_mc_step(self, logger):
@@ -125,14 +145,42 @@ class ProteinFolding:
         Performs a MC step and determines if moves are possible.
         Accepts or declines new energy configurations.
         """
-        for index in range(self.N):
-            # Select a random monomer
-            index = np.random.randint(self.N)   
+        # Select a random monomer
+        index = np.random.randint(0,self.N-1)
 
-            valid_moves = self.get_mc_directions()
-            np.random.shuffle(
+        moves = self.get_moves()
+        # Shuffle moves to ensure randomness
+        np.random.shuffle(moves)
+
+        current_energy = self.energy
+        old_position = self.pos[index].copy()
+
+        for move in moves:
+            print(f"checking move {move} for monomer {index}")
+            if self.is_valid_move(index,move):
+                self.pos[index] += np.array(move)
+                new_energy = self.calc_energies()
+
+                if self.metropolis_criterion(current_energy,new_energy):
+                    print("move accepted")
+                    self.energy = new_energy
+                    e2e = self.calc_e2e()
+                    rog = self.calc_rog()
+
+                    logger.log_all(self.energy,self.pos.copy(),e2e,rog)
+                    break
+                else:
+                    print("Move rejected by Metropolis")
+                    # Revert move
+                    self.pos[index] = old_position
 
 
+            
+    def run_simulation(self,sweeps,logger):
+        """ Runs the MC simulation """
+        for _ in range(sweeps):
+            self.perform_mc_step(logger)
+        logger.plot_data(sweeps)
     
 
     def gen_unfolded_protein(self):
@@ -143,11 +191,6 @@ class ProteinFolding:
         for i in range(self.N):
             self.pos[i] = [i,0]
 
-    def run_simulation(self,sweeps,logger):
-        """ Runs the MC simulation """
-        for _ in range(sweeps):
-            self.perform_mc_step(logger)
-        logger.plot_data(sweeps)
 
     def plot_im(self):
         """ Plots an instance of the interaction matrix """
@@ -198,13 +241,15 @@ def task1_5():
     # Make sure its unfolded
     p.gen_unfolded_protein()
     p.plot_2D()
-
+    p.plot_im()
     # Perform X = 1,10,100 sweeps and get e2e,rog and energy
     p.run_simulation(1,logger)
     p.run_simulation(10,logger)
+    p.plot_im()
     # Check if the plot is updated
     p.plot_2D()
     p.run_simulation(100,logger)
     p.plot_2D()
+    p.plot_im()
 
 task1_5()
