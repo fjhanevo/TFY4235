@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 class Logger:
     def __init__(self):
@@ -51,9 +52,6 @@ class Logger:
 
         plt.tight_layout()
         plt.show()
-
-    def plot_structure(self):
-        """ Plots a 2D structure using the logged data """
 
 
     def export_data(self,filename):

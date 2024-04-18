@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D 
-from logger import Logger
+
 """ TFY4235 Assignment 3: Protein Folding"""
 
 class ProteinFolding:
@@ -16,7 +16,6 @@ class ProteinFolding:
         self.nn = self.find_nn()
         self.energy = self.calc_energies()
 
-
     def gen_types(self):
         """ Generates random types ranging from 1 - 20 """
         return np.random.randint(1,21,size=self.N)
@@ -25,6 +24,12 @@ class ProteinFolding:
     def get_moves():
         """ Defines allowed moves in 2D """
         return [(1,0),(-1,0),(0,1),(0,-1)]
+
+    @staticmethod
+    def get_mc_moves():
+        """ Defines allowed moves in 2D for the Monte Carlo step """
+        return [(1,0),(-1,0),(0,1),(0,-1),
+                (1,1),(-1,1),(1,-1),(-1,-1)]
 
     def place_monomers(self):
         """ 
@@ -79,7 +84,6 @@ class ProteinFolding:
             nn.append(n)
         return nn
 
-
     @staticmethod
     def interaction_matrix():
         """ Create interaction matrix, make sure it stays constant """
@@ -112,15 +116,26 @@ class ProteinFolding:
         # Check for overlap
         pos_new = self.pos[index] + move
 
-        print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
+        # print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
         # Check for diagonal moves
-        if abs(move[0]) == abs(move[1]) == 1:
-            print("DIAGONAL!!!!!!!!!")
-            return False
+        # if abs(move[0]) == abs(move[1]) == 1:
+        #     print("DIAGONAL!!!!!!!!!")
+        #     return False
 
         if any(np.array_equal(pos_new, pos) for pos in self.pos):
-            print("Move results in overlap")
+            # print("Move results in overlap")
             return False
+        # if index > 0 and (index-1 not in self.nn[index] or index+1 not in self.nn[index]):
+        #     return False
+        if index > 0:  # If there's a monomer before the current one
+            if np.linalg.norm(self.pos[index - 1] - pos_new) != 1:
+                # print("Monomer before")
+                return False
+
+        if index < self.N - 1:  # If there's a monomer after the current one
+            if np.linalg.norm(self.pos[index + 1] - pos_new) != 1:
+                # print("Monomer after")
+                return False
         
         
         print("OK")
@@ -131,14 +146,16 @@ class ProteinFolding:
     def metropolis_criterion(self,current_energy,new_energy):
         """ Metropolis criterion used to determine if a move should be accepted """
         dE = new_energy - current_energy
-        
-        if dE < 0:
+        #
+        # if dE < 0:
+        #     return True
+        # else:
+        #     return 
+        # print(min(1,np.exp(-dE/self.temp)))
+        if np.random.rand() < min(1,np.exp(-dE/self.temp)):
             return True
         else:
-            return np.random.rand() < np.exp(-dE/self.temp) 
-
-
-
+            print('rejected')
 
     def perform_mc_step(self, logger):
         """
@@ -148,24 +165,27 @@ class ProteinFolding:
         # Select a random monomer
         index = np.random.randint(0,self.N-1)
 
-        moves = self.get_moves()
+        moves = self.get_mc_moves()
         # Shuffle moves to ensure randomness
         np.random.shuffle(moves)
 
         current_energy = self.energy
         old_position = self.pos[index].copy()
+        occupied_pos = set()
+        occupied_pos.add(tuple(self.pos[0]))
 
         for move in moves:
-            print(f"checking move {move} for monomer {index}")
+            # print(f"checking move {move} for monomer {index}")
             if self.is_valid_move(index,move):
-                self.pos[index] += np.array(move)
                 new_energy = self.calc_energies()
 
                 if self.metropolis_criterion(current_energy,new_energy):
                     print("move accepted")
+                    self.pos[index] += np.array(move)
                     self.energy = new_energy
                     e2e = self.calc_e2e()
                     rog = self.calc_rog()
+                    self.nn = self.find_nn()    # Update nn
 
                     logger.log_all(self.energy,self.pos.copy(),e2e,rog)
                     break
@@ -173,16 +193,13 @@ class ProteinFolding:
                     print("Move rejected by Metropolis")
                     # Revert move
                     self.pos[index] = old_position
-
-
             
-    def run_simulation(self,sweeps,logger):
-        """ Runs the MC simulation """
-        for _ in range(sweeps):
-            self.perform_mc_step(logger)
-        logger.plot_data(sweeps)
-    
-
+    # def run_simulation(self,sweeps,logger):
+    #     """ Runs the MC simulation """
+    #     for _ in range(sweeps):
+    #         self.perform_mc_step(logger)
+    #     logger.plot_data(sweeps)
+    #
     def gen_unfolded_protein(self):
         """ Generates an unfolded protein """
         # Reset the position 
@@ -190,66 +207,7 @@ class ProteinFolding:
 
         for i in range(self.N):
             self.pos[i] = [i,0]
-
-
-    def plot_im(self):
-        """ Plots an instance of the interaction matrix """
-        plt.figure(figsize=(8,6))
-        plt.imshow(self.int_mat,cmap='inferno')
-        plt.colorbar(label='Interaction Energy')
-        plt.title('Monomer-Monomer Interaction Energy Matrix')
-        plt.xlabel('Monomer type')
-        plt.ylabel('Monomer type')
-        plt.show()
+   
     
-    def plot_2D(self):
-        """ Plots a 2D primary structure """
-        x = self.pos[:,0]
-        y = self.pos[:,1]
 
-        plt.figure(figsize=(8,6))
-        plt.plot(x,y,marker='o',markersize=8,markerfacecolor='blue',
-                 color='skyblue',linewidth=4)
 
-        # Highlight first monomer
-        plt.plot(x[0],y[0],marker='o',markersize=8, color='green',label='First monomer')
-
-        # Highlight last monomer
-        plt.plot(x[-1],y[-1],marker='o',markersize=8, color='red',label='Last monomer')
-
-        # Annotate types on the plot
-        # for i, t in enumerate(self.types):
-        #     plt.annotate(str(t),(x[i],y[i]))
-
-        plt.title('2D Primary structure with randomly assigned types')
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
-        plt.grid(True)
-        plt.axis('equal')
-        plt.legend()
-        plt.show()
-    
-# if __name__ == 'main':
-
-def task1_5():
-    # Initialize a protein with 15 Monomers and T = 10
-    p = ProteinFolding(15,10)
-    
-    # Initalize a logger instance
-    logger = Logger()
-
-    # Make sure its unfolded
-    p.gen_unfolded_protein()
-    p.plot_2D()
-    p.plot_im()
-    # Perform X = 1,10,100 sweeps and get e2e,rog and energy
-    p.run_simulation(1,logger)
-    p.run_simulation(10,logger)
-    p.plot_im()
-    # Check if the plot is updated
-    p.plot_2D()
-    p.run_simulation(100,logger)
-    p.plot_2D()
-    p.plot_im()
-
-task1_5()
