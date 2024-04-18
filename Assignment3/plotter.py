@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class ProteinPlotting:
     def __init__(self,pf,log):
@@ -8,30 +9,57 @@ class ProteinPlotting:
     
     def plot_monomer(self,sweeps):
         """ Plots a 2D primary structure """
-        x = self.pf.pos[:,0]
-        y = self.pf.pos[:,1]
 
-        plt.figure(figsize=(8,6))
-        plt.plot(x,y,marker='o',markersize=8,markerfacecolor='blue',
-                 color='skyblue',linewidth=4)
+        """ LEGG TIL BEDRE DIMENSION CHECK!!!"""
+        if len(self.pf.shape) > 2:
+            x = self.pf.pos[:,0]
+            y = self.pf.pos[:,1]
+            z = self.pf.pos[:,2]
 
-        # Highlight first monomer
-        plt.plot(x[0],y[0],marker='o',markersize=8, color='green',label='First monomer')
+            fig = plt.figure(figsize=(10,8))
+            ax = fig.add_subplot(111,projection='3d')
+            ax.plot(x,y,z,marker='o',markersize=8,markerfacecolor='blue',
+                    color = 'skyblue',linewidth=4)
 
-        # Highlight last monomer
-        plt.plot(x[-1],y[-1],marker='o',markersize=8, color='red',label='Last monomer')
+            # Highlight first monomer
+            ax.plot(x[0],y[0],z[0],marker='o',markersize=8, color='green',label='First monomer')
 
-        # Annotate types on the plot
-        for i, t in enumerate(self.pf.types):
-            plt.annotate(str(t),(x[i]+0.065,y[i]+0.065))
+            # Highlight last monomer
+            ax.plot(x[-1],y[-1],z[-1],marker='o',markersize=8, color='red',label='Last monomer')
 
-        plt.title(f'2D protein with randomly assigned types. Sweeps = {sweeps}')
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
-        plt.grid(True)
-        plt.axis('equal')
-        plt.legend()
-        plt.show()
+            ax.set_xlabel('$x$')
+            ax.set_ylabel('$y$')
+            ax.set_zlabel('$z$')
+            ax.grid(True)
+            ax.legend()
+            plt.tight_layout()
+            plt.show()
+
+        else:
+            x = self.pf.pos[:,0]
+            y = self.pf.pos[:,1]
+
+            plt.figure(figsize=(8,6))
+            plt.plot(x,y,marker='o',markersize=8,markerfacecolor='blue',
+                    color='skyblue',linewidth=4)
+
+            # Highlight first monomer
+            plt.plot(x[0],y[0],marker='o',markersize=8, color='green',label='First monomer')
+
+            # Highlight last monomer
+            plt.plot(x[-1],y[-1],marker='o',markersize=8, color='red',label='Last monomer')
+
+            # Annotate types on the plot
+            for i, t in enumerate(self.pf.types):
+                plt.annotate(str(t),(x[i]+0.065,y[i]+0.065))
+
+            plt.title(f'2D protein with randomly assigned types. Sweeps = {sweeps}')
+            plt.xlabel('$x$')
+            plt.ylabel('$y$')
+            plt.grid(True)
+            plt.axis('equal')
+            plt.legend()
+            plt.show()
 
 
     def plot_im(self):
