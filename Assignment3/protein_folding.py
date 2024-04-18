@@ -87,7 +87,7 @@ class ProteinFolding:
     @staticmethod
     def interaction_matrix():
         """ Create interaction matrix, make sure it stays constant """
-        # np.random.seed(10)
+        # np.random.seed(80085)
         int_mat = np.random.uniform(-4,-2,(20,20))
         # Ensure that the matrix is symmetric
         return (int_mat + int_mat.T)/2
@@ -113,7 +113,7 @@ class ProteinFolding:
 
     def is_valid_move(self, index, move):
         """ Check if a move is valid and don't result in overlap """
-        # Check for overlap
+        # Temporarily assign new move
         pos_new = self.pos[index] + move
 
         # print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
@@ -122,6 +122,7 @@ class ProteinFolding:
         #     print("DIAGONAL!!!!!!!!!")
         #     return False
 
+        # Check for overlap
         if any(np.array_equal(pos_new, pos) for pos in self.pos):
             # print("Move results in overlap")
             return False
@@ -138,7 +139,7 @@ class ProteinFolding:
                 return False
         
         
-        print("OK")
+        # print("OK")
         return True
 
         # Check that position is within the bounds
@@ -146,54 +147,52 @@ class ProteinFolding:
     def metropolis_criterion(self,current_energy,new_energy):
         """ Metropolis criterion used to determine if a move should be accepted """
         dE = new_energy - current_energy
-        #
-        # if dE < 0:
-        #     return True
-        # else:
-        #     return 
-        # print(min(1,np.exp(-dE/self.temp)))
+        
         if np.random.rand() < min(1,np.exp(-dE/self.temp)):
             return True
         else:
-            print('rejected')
+            return  
 
     def perform_mc_step(self, logger):
         """
         Performs a MC step and determines if moves are possible.
         Accepts or declines new energy configurations.
         """
+        # for index in np.random.permutation(self.N):
         # Select a random monomer
-        index = np.random.randint(0,self.N-1)
-
+        index = np.random.randint(0,self.N)
         moves = self.get_mc_moves()
         # Shuffle moves to ensure randomness
         np.random.shuffle(moves)
 
         current_energy = self.energy
         old_position = self.pos[index].copy()
-        occupied_pos = set()
-        occupied_pos.add(tuple(self.pos[0]))
 
         for move in moves:
             # print(f"checking move {move} for monomer {index}")
             if self.is_valid_move(index,move):
+                # Update pos with new move 
+                self.pos[index] += np.array(move)
                 new_energy = self.calc_energies()
 
                 if self.metropolis_criterion(current_energy,new_energy):
                     print("move accepted")
-                    self.pos[index] += np.array(move)
+                    # Accept the new configuration
                     self.energy = new_energy
                     e2e = self.calc_e2e()
                     rog = self.calc_rog()
                     self.nn = self.find_nn()    # Update nn
 
-                    logger.log_all(self.energy,self.pos.copy(),e2e,rog)
+                    logger.log_all(self.energy,self.pos,e2e,rog)
                     break
                 else:
                     print("Move rejected by Metropolis")
                     # Revert move
                     self.pos[index] = old_position
-            
+            else:
+                # Revert move
+                self.pos[index] = old_position
+                
     # def run_simulation(self,sweeps,logger):
     #     """ Runs the MC simulation """
     #     for _ in range(sweeps):

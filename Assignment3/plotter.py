@@ -25,7 +25,7 @@ class ProteinPlotting:
         for i, t in enumerate(self.pf.types):
             plt.annotate(str(t),(x[i]+0.065,y[i]+0.065))
 
-        plt.title(f'2D protein with randomly assigned types Sweeps = {sweeps}')
+        plt.title(f'2D protein with randomly assigned types. Sweeps = {sweeps}')
         plt.xlabel('$x$')
         plt.ylabel('$y$')
         plt.grid(True)
@@ -49,7 +49,7 @@ class ProteinPlotting:
         plt.figure(figsize=(12,8))
         plt.subplot(311)
         plt.plot(self.log.data['energy'], label='Energy')
-        plt.title(f'Energy vs. {sweeps} Sweep(s)')
+        plt.title(f'Energy for Sweep(s) = {sweeps}')
         plt.xlabel('MC Steps')
         plt.ylabel('Energy')
         plt.grid(True)
@@ -57,7 +57,7 @@ class ProteinPlotting:
 
         plt.subplot(312)
         plt.plot(self.log.data['end_to_end-distance'], label='End-to-End Distance')
-        plt.title(f'End-to-End Distance vs. {sweeps} Sweep(s)')
+        plt.title(f'End-to-End Distance for Sweep(s) = {sweeps}')
         plt.xlabel('MC Steps')
         plt.ylabel('Distance')
         plt.grid(True)
@@ -65,7 +65,7 @@ class ProteinPlotting:
 
         plt.subplot(313)
         plt.plot(self.log.data['radius_of_gyration'], label='RoG')
-        plt.title(f'Radius of Gyration vs. {sweeps} Sweep(s)')
+        plt.title(f'Radius of Gyration for Sweep(s) = {sweeps}')
         plt.xlabel('MC Steps')
         plt.ylabel('RoG')
         plt.grid(True)

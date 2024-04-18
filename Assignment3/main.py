@@ -9,7 +9,6 @@ def run_simulation(pf, log, sweep):
 
 def task1_5():
     """ Performing X = 1,10,100 sweeps on a N=15 unfolded protein for T = 10 """
-
     # Initialize proteinFolding, logger and plotting instance
     pf = ProteinFolding(15,10)
     log = Logger()
@@ -35,7 +34,26 @@ def task1_5():
     # Plot the final shape after 100 sweeps
     pplot.plot_monomer(100)
 
-task1_5()
+def task1_6():
+    """ Weird task, not a lot happens when we have N = 100 because there is such a low chance for a move to be valid """
+    pf = ProteinFolding(15,1)
+    log = Logger()
+    pplot = ProteinPlotting(pf,log)
+    pf.gen_unfolded_protein()
+    run_simulation(pf,log,1)
+    pplot.plot_monomer(1)
+
+    run_simulation(pf,log,10)
+    pplot.plot_monomer(10)
+
+    run_simulation(pf,log,100)
+    pplot.plot_monomer(100)
+    
+    run_simulation(pf,log,150)
+    pplot.plot_monomer(150)
+if __name__ == "__main__":
+    # task1_5()
+    task1_6()
 
 
 
