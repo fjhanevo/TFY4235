@@ -23,37 +23,6 @@ class Logger:
         """ Retrieve a specific logged data """
         return self.data.get(key,[])
 
-    def plot_data(self,sweeps):
-        """ Plots energy, e2e and RoG as a function of MC steps """
-        plt.figure(figsize=(12,8))
-        plt.subplot(311)
-        plt.plot(self.data['energy'], label='Energy')
-        plt.title(f'Energy vs. {sweeps} Sweep(s)')
-        plt.xlabel('MC Steps')
-        plt.ylabel('Energy')
-        plt.grid(True)
-        plt.legend()
-
-        plt.subplot(312)
-        plt.plot(self.data['end_to_end-distance'], label='End-to-End Distance')
-        plt.title(f'End-to-End Distance vs. {sweeps} Sweep(s)')
-        plt.xlabel('MC Steps')
-        plt.ylabel('Distance')
-        plt.grid(True)
-        plt.legend()
-
-        plt.subplot(313)
-        plt.plot(self.data['radius_of_gyration'], label='RoG')
-        plt.title(f'Radius of Gyration vs. {sweeps} Sweep(s)')
-        plt.xlabel('MC Steps')
-        plt.ylabel('RoG')
-        plt.grid(True)
-        plt.legend()
-
-        plt.tight_layout()
-        plt.show()
-
-
     def export_data(self,filename):
         """ Export logged data to a Jéson file """
         with open(filename, 'w') as file:
