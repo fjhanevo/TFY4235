@@ -31,15 +31,16 @@ class ProteinFolding:
         return [(1,0),(-1,0),(0,1),(0,-1),
                 (1,1),(-1,1),(1,-1),(-1,-1)]
 
+    """ Skriv om denne funksjonen kanskje?"""
     def place_monomers(self):
         """ 
         Creates an empty list to store positions.
         Randomly place monomers and check if the moves are valid
         and don't overlap
         """
-        pos = np.zeros((self.N,2),dtype=int)     # Initialize positions
+        # pos = np.zeros((self.N,2),dtype=int)     # Initialize positions
         occupied_pos = set()                # Track occupied positions
-        occupied_pos.add(tuple(pos[0]))     # Set start to origin
+        occupied_pos.add(tuple(self.pos[0]))     # Set start to origin
 
         for i in range(1, self.N):
             moves = self.get_moves()
@@ -47,9 +48,9 @@ class ProteinFolding:
             valid_move = False
 
             for move in moves:
-                pos_next = pos[i-1] + np.array(move)
+                pos_next = self.pos[i-1] + np.array(move)
                 if tuple(pos_next) not in occupied_pos:
-                    pos[i] = pos_next
+                    self.pos[i] = pos_next
                     occupied_pos.add(tuple(pos_next))
                     valid_move = True
                     break   # Stop after finding a valid move
@@ -58,7 +59,7 @@ class ProteinFolding:
                 # Raise an exception if an invalid move is found
                 raise ValueError(f"Unable to place monomer {i}")
 
-        self.pos = pos
+        # self.pos = pos
 
     def find_nn(self):
         """ 
