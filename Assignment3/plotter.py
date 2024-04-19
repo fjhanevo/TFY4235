@@ -12,7 +12,6 @@ class ProteinPlotting:
     def plot_monomer(self,sweeps):
         """ Plots a 2D primary structure """
 
-        """ LEGG TIL BEDRE DIMENSION CHECK!!!"""
         if self.D > 2:
             x = self.pf.pos[:,0]
             y = self.pf.pos[:,1]

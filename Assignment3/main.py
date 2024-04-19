@@ -1,6 +1,8 @@
 from protein_folding import ProteinFolding
 from logger import Logger
 from plotter import ProteinPlotting
+from protein_folding3D import ProteinFolding3D
+
 
 def run_simulation(pf, log, sweep):
     """ Runs the MC simulation """
@@ -51,9 +53,40 @@ def task1_6():
     
     run_simulation(pf,log,150)
     pplot.plot_monomer(150)
+
+def test3D():
+    p = ProteinFolding3D(15,10)
+    log = Logger()
+    p.place_monomers()
+
+    pplot = ProteinPlotting(p,log,3)
+    pplot.plot_monomer(1)
+
+def test():
+    p = ProteinFolding(15,10)
+    log = Logger()
+    pplot = ProteinPlotting(p,log)
+    p.place_monomers()
+    pplot.plot_monomer(1)
+
+def unfolded3dtest():
+    p = ProteinFolding3D(15,10)
+    p.gen_unfolded_protein()
+    log = Logger()
+    plot = ProteinPlotting(p,log,3)
+    plot.plot_monomer(1)
+    run_simulation(p,log,100)
+    plot.plot_monomer(100)
+
+    
+
+
 if __name__ == "__main__":
     # task1_5()
-    task1_6()
+    # task1_6()
+    # test3D()
+    # test()
+    unfolded3dtest()
 
 
 

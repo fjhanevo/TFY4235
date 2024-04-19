@@ -10,7 +10,8 @@ class ProteinFolding:
         self.N = N
         self.temp = T
         self.pos = np.zeros((self.N,2),dtype=int) 
-        # self.pos = self.place_monomers()
+        # Set starting point to origin
+        self.pos[0] = np.array([0,0])
         self.types = self.gen_types()
         self.int_mat = self.interaction_matrix()
         self.nn = self.find_nn()
@@ -30,36 +31,31 @@ class ProteinFolding:
         """ Defines allowed moves in 2D for the Monte Carlo step """
         return [(1,0),(-1,0),(0,1),(0,-1),
                 (1,1),(-1,1),(1,-1),(-1,-1)]
+    
 
     """ Skriv om denne funksjonen kanskje?"""
     def place_monomers(self):
         """ 
-        Creates an empty list to store positions.
         Randomly place monomers and check if the moves are valid
         and don't overlap
         """
-        # pos = np.zeros((self.N,2),dtype=int)     # Initialize positions
-        occupied_pos = set()                # Track occupied positions
-        occupied_pos.add(tuple(self.pos[0]))     # Set start to origin
+        occupied_pos = set()
+        occupied_pos.add(tuple(self.pos[0]))
 
-        for i in range(1, self.N):
+        for index in range(1, self.N):
             moves = self.get_moves()
-            np.random.shuffle(moves)       # Randomize order of trial
+            np.random.shuffle(moves)
             valid_move = False
 
             for move in moves:
-                pos_next = self.pos[i-1] + np.array(move)
+                pos_next = self.pos[index-1] + np.array(move)
                 if tuple(pos_next) not in occupied_pos:
-                    self.pos[i] = pos_next
+                    self.pos[index] = pos_next
                     occupied_pos.add(tuple(pos_next))
                     valid_move = True
-                    break   # Stop after finding a valid move
 
             if not valid_move:
-                # Raise an exception if an invalid move is found
-                raise ValueError(f"Unable to place monomer {i}")
-
-        # self.pos = pos
+                raise ValueError(f"Unable to place monomer {index}: No valid moves")
 
     def find_nn(self):
         """ 
@@ -117,7 +113,7 @@ class ProteinFolding:
         # Temporarily assign new move
         pos_new = self.pos[index] + move
 
-        # print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
+        print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
         # Check for diagonal moves
         # if abs(move[0]) == abs(move[1]) == 1:
         #     print("DIAGONAL!!!!!!!!!")
@@ -125,18 +121,18 @@ class ProteinFolding:
 
         # Check for overlap
         if any(np.array_equal(pos_new, pos) for pos in self.pos):
-            # print("Move results in overlap")
+            print("Move results in overlap")
             return False
         # if index > 0 and (index-1 not in self.nn[index] or index+1 not in self.nn[index]):
         #     return False
         if index > 0:  # If there's a monomer before the current one
             if np.linalg.norm(self.pos[index - 1] - pos_new) != 1:
-                # print("Monomer before")
+                print("Monomer before")
                 return False
 
         if index < self.N - 1:  # If there's a monomer after the current one
             if np.linalg.norm(self.pos[index + 1] - pos_new) != 1:
-                # print("Monomer after")
+                print("Monomer after")
                 return False
         
         
@@ -194,12 +190,6 @@ class ProteinFolding:
                 # Revert move
                 self.pos[index] = old_position
                 
-    # def run_simulation(self,sweeps,logger):
-    #     """ Runs the MC simulation """
-    #     for _ in range(sweeps):
-    #         self.perform_mc_step(logger)
-    #     logger.plot_data(sweeps)
-    #
     def gen_unfolded_protein(self):
         """ Generates an unfolded protein """
         # Reset the position 
