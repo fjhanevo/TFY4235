@@ -2,31 +2,33 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class ProteinPlotting:
-    def __init__(self,pf,log):
+    def __init__(self,pf,log,D=2):
         """ Initialize a ProteinFolding and Logger instance """
         self.pf = pf
         self.log = log
+        # Dimensionality checker
+        self.D = D
     
     def plot_monomer(self,sweeps):
         """ Plots a 2D primary structure """
 
         """ LEGG TIL BEDRE DIMENSION CHECK!!!"""
-        if len(self.pf.shape) > 2:
+        if self.D > 2:
             x = self.pf.pos[:,0]
             y = self.pf.pos[:,1]
             z = self.pf.pos[:,2]
-
+            
             fig = plt.figure(figsize=(10,8))
             ax = fig.add_subplot(111,projection='3d')
             ax.plot(x,y,z,marker='o',markersize=8,markerfacecolor='blue',
                     color = 'skyblue',linewidth=4)
-
+            
             # Highlight first monomer
             ax.plot(x[0],y[0],z[0],marker='o',markersize=8, color='green',label='First monomer')
-
+            
             # Highlight last monomer
             ax.plot(x[-1],y[-1],z[-1],marker='o',markersize=8, color='red',label='Last monomer')
-
+            
             ax.set_xlabel('$x$')
             ax.set_ylabel('$y$')
             ax.set_zlabel('$z$')
@@ -34,7 +36,7 @@ class ProteinPlotting:
             ax.legend()
             plt.tight_layout()
             plt.show()
-
+            
         else:
             x = self.pf.pos[:,0]
             y = self.pf.pos[:,1]
