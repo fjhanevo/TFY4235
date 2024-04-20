@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -6,6 +7,7 @@ class ProteinPlotting:
         """ Initialize a ProteinFolding and Logger instance """
         self.pf = pf
         self.log = log
+        self.N = pf.N
         # Dimensionality checker
         self.D = D
     
@@ -13,6 +15,8 @@ class ProteinPlotting:
         """ Plots a 2D primary structure """
 
         if self.D > 2:
+
+            ticks = np.arange(1,self.N+3,1)
             x = self.pf.pos[:,0]
             y = self.pf.pos[:,1]
             z = self.pf.pos[:,2]
@@ -31,6 +35,10 @@ class ProteinPlotting:
             ax.set_xlabel('$x$')
             ax.set_ylabel('$y$')
             ax.set_zlabel('$z$')
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+            ax.set_zticks(ticks)
+            plt.title(f'3D protein with randomly assigned types. Sweeps = {sweeps}')
             ax.grid(True)
             ax.legend()
             plt.tight_layout()

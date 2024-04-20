@@ -55,12 +55,40 @@ class ProteinFolding3D(ProteinFolding):
         ]
         return possible_moves
 
+    def place_monomers(self):
+        """ 
+        Randomly place monomers and check if the moves are valid
+        and don't overlap
+        """
+        occupied_pos = set()
+        occupied_pos.add(tuple(self.pos[0]))
+
+        center= int(self.N/2)
+        self.pos[0] = [center,center,center]
+        for index in range(1, self.N):
+            moves = self.get_moves()
+            np.random.shuffle(moves)
+            valid_move = False
+
+            for move in moves:
+                pos_next = self.pos[index-1] + np.array(move)
+                if tuple(pos_next) not in occupied_pos:
+                    self.pos[index] = pos_next
+                    occupied_pos.add(tuple(pos_next))
+                    valid_move = True
+
+            if not valid_move:
+                raise ValueError(f"Unable to place monomer {index}: No valid moves")
+
 
 
     def gen_unfolded_protein(self):
-        """ Generates an unfolded protein """
+        """ Generates an unfolded protein in 3D """
+        # let the protein start at the center for better visualization
+        center= int(self.N/2)
+        self.pos[0] = [0,center,center]
         for index in range(1,self.N):
-            self.pos[index] = [index,0,0]
+            self.pos[index] = [index,center,center]
    
 
 
