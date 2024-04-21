@@ -2,9 +2,9 @@ from protein_folding import ProteinFolding
 import numpy as np
 
 class ProteinFolding3D(ProteinFolding):
-    def __init__(self,N,T):
+    def __init__(self,N,T, seed=None):
         """ Initialize the base class """
-        super().__init__(N,T)
+        super().__init__(N,T,seed)
         # Overwrite the pos from PF class, make it 3D
         self.pos = np.zeros((N,3),dtype=int)
         # Set starting point to origin

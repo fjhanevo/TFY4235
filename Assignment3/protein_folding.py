@@ -1,15 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D 
-
 """ TFY4235 Assignment 3: Protein Folding"""
 
 class ProteinFolding:
-    def __init__(self,N, T):
+    def __init__(self,N, T, seed=None):
         """ Initialization function"""
+        import numpy as np
         self.N = N
         self.temp = T
         self.pos = np.zeros((self.N,2),dtype=int) 
+        if seed is not None:
+            np.random.seed(seed)
         # Set starting point to origin
         self.pos[0] = np.array([0,0])
         self.types = self.gen_types()
