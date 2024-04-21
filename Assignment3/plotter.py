@@ -12,10 +12,9 @@ class ProteinPlotting:
         self.D = D
     
     def plot_monomer(self,sweeps):
-        """ Plots a 2D primary structure """
+        """ Plots proteins in both 2D and 3D """
 
         if self.D > 2:
-
             ticks = np.arange(1,self.N+3,1)
             x = self.pf.pos[:,0]
             y = self.pf.pos[:,1]
@@ -32,13 +31,17 @@ class ProteinPlotting:
             # Highlight last monomer
             ax.plot(x[-1],y[-1],z[-1],marker='o',markersize=8, color='red',label='Last monomer')
             
+            # Annotate types on the plot
+            for i, t in enumerate(self.pf.types):
+                ax.text(x[i]+0.065,y[i]+0.065,z[i]+0.065, f'{t}',color='black',fontsize=12)
+            
             ax.set_xlabel('$x$')
             ax.set_ylabel('$y$')
             ax.set_zlabel('$z$')
             ax.set_xticks(ticks)
             ax.set_yticks(ticks)
             ax.set_zticks(ticks)
-            plt.title(f'3D protein with randomly assigned types. Sweeps = {sweeps}')
+            plt.title(f'3D protein with randomly assigned types. Sweep(s) = {sweeps}')
             ax.grid(True)
             ax.legend()
             plt.tight_layout()
@@ -62,7 +65,7 @@ class ProteinPlotting:
             for i, t in enumerate(self.pf.types):
                 plt.annotate(str(t),(x[i]+0.065,y[i]+0.065))
 
-            plt.title(f'2D protein with randomly assigned types. Sweeps = {sweeps}')
+            plt.title(f'2D protein with randomly assigned types. Sweep(s) = {sweeps}')
             plt.xlabel('$x$')
             plt.ylabel('$y$')
             plt.grid(True)
@@ -76,7 +79,7 @@ class ProteinPlotting:
         plt.figure(figsize=(8,6))
         plt.imshow(self.pf.int_mat,cmap='inferno')
         plt.colorbar(label='Interaction Energy')
-        plt.title('Monomer-Monomer Interaction Energy Matrix')
+        plt.title(f'Monomer-Monomer Interaction Energy Matrix, Dimension = {self.D}D')
         # plt.xlabel('Monomer type')
         # plt.ylabel('Monomer type')
         plt.show()
@@ -86,7 +89,7 @@ class ProteinPlotting:
         plt.figure(figsize=(12,8))
         plt.subplot(311)
         plt.plot(self.log.data['energy'], label='Energy')
-        plt.title(f'Energy for Sweep(s) = {sweeps}')
+        plt.title(f'Energy for Sweep(s) = {sweeps}, Dimension={self.D}D')
         plt.xlabel('MC Steps')
         plt.ylabel('Energy')
         plt.grid(True)
@@ -94,7 +97,7 @@ class ProteinPlotting:
 
         plt.subplot(312)
         plt.plot(self.log.data['end_to_end-distance'], label='End-to-End Distance')
-        plt.title(f'End-to-End Distance for Sweep(s) = {sweeps}')
+        plt.title(f'End-to-End Distance for Sweep(s) = {sweeps}, Dimension={self.D}D')
         plt.xlabel('MC Steps')
         plt.ylabel('Distance')
         plt.grid(True)
@@ -102,7 +105,7 @@ class ProteinPlotting:
 
         plt.subplot(313)
         plt.plot(self.log.data['radius_of_gyration'], label='RoG')
-        plt.title(f'Radius of Gyration for Sweep(s) = {sweeps}')
+        plt.title(f'Radius of Gyration for Sweep(s) = {sweeps}, Dimension={self.D}D')
         plt.xlabel('MC Steps')
         plt.ylabel('RoG')
         plt.grid(True)
