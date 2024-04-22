@@ -1,7 +1,5 @@
 import json
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 class Logger:
     def __init__(self):
@@ -18,6 +16,14 @@ class Logger:
         self.data['positions'].append(positions)
         self.data['end_to_end-distance'].append(e2e)
         self.data['radius_of_gyration'].append(rog)
+
+    def get_average(self,key):
+        """ Return average value of specified key """
+        if key not in self.data:
+            raise ValueError(f'{key} not available')
+        else:
+            return np.mean(self.data[key])
+
 
     def get_data(self,key):
         """ Retrieve a specific logged data """
