@@ -43,6 +43,7 @@ class ProteinPlotting:
             ax.set_zticks(ticks)
             plt.title(f'3D protein with randomly assigned types. Sweep(s) = {sweeps}')
             ax.grid(True)
+            plt.axis('equal')
             ax.legend()
             plt.tight_layout()
             plt.show()
@@ -113,6 +114,41 @@ class ProteinPlotting:
 
         plt.tight_layout()
         plt.show()
+
+    def plot_e_rog(self):
+        """ Plots energy and RoG for different chain lengths and temperatures """
+        plt.figure(figsize=(12,8))
+        plt.subplot(211)
+        plt.plot(self.log.data['energy'], label='Energy')
+        plt.title(f'Energy for N = {self.N} chain length, Dimension={self.D}, T = {self.pf.temp}')
+        plt.grid(True)
+        plt.legend()
+
+        plt.subplot(212)
+        plt.plot(self.log.data['radius_of_gyration'], label='RoG')
+        plt.title(f'Rog for N = {self.N} chain length, Dimension={self.D}, T = {self.pf.temp}')
+        plt.grid(True)
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()
+    
+    def plot_average(self,key):
+        """ Plots average values """
+        plt.figure(figsize=(12,8))
+        # plt.subplot(211)
+        plt.plot(self.log.get_average(key),label = f'Average {key}')
+        plt.xlabel('Steps')
+        plt.legend()
+
+        # plt.subplot(212)
+        # plt.plot(self.log.get_average('radius_of_gyration'),label='Average RoG')
+        # plt.xlabel('Steps')
+        # plt.legend()
+        #
+        plt.tight_layout()
+        plt.show()
+
 
 
  
