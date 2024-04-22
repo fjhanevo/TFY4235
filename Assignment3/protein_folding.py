@@ -113,7 +113,7 @@ class ProteinFolding:
         # Temporarily assign new move
         pos_new = self.pos[index] + move
 
-        print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
+        # print(f"Trying {move} for monomer {index} from {self.pos[index]} to {pos_new}")
         # Check for diagonal moves
         # if abs(move[0]) == abs(move[1]) == 1:
         #     print("DIAGONAL!!!!!!!!!")
@@ -121,18 +121,18 @@ class ProteinFolding:
 
         # Check for overlap
         if any(np.array_equal(pos_new, pos) for pos in self.pos):
-            print("Move results in overlap")
+            # print("Move results in overlap")
             return False
         # if index > 0 and (index-1 not in self.nn[index] or index+1 not in self.nn[index]):
         #     return False
         if index > 0:  # If there's a monomer before the current one
             if np.linalg.norm(self.pos[index - 1] - pos_new) != 1:
-                print("Monomer before")
+                # print("Monomer before")
                 return False
 
         if index < self.N - 1:  # If there's a monomer after the current one
             if np.linalg.norm(self.pos[index + 1] - pos_new) != 1:
-                print("Monomer after")
+                # print("Monomer after")
                 return False
         
         
@@ -173,7 +173,7 @@ class ProteinFolding:
                 new_energy = self.calc_energies()
 
                 if self.metropolis_criterion(current_energy,new_energy):
-                    print("move accepted")
+                    # print("move accepted")
                     # Accept the new configuration
                     self.energy = new_energy
                     e2e = self.calc_e2e()
@@ -183,7 +183,7 @@ class ProteinFolding:
                     logger.log_all(self.energy,self.pos,e2e,rog)
                     break
                 else:
-                    print("Move rejected by Metropolis")
+                    # print("Move rejected by Metropolis")
                     # Revert move
                     self.pos[index] = old_position
             else:
