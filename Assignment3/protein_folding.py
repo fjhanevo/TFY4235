@@ -155,45 +155,43 @@ class ProteinFolding:
         Performs a MC step and determines if moves are possible.
         Accepts or declines new energy configurations.
         """
-        # for index in np.random.permutation(self.N):
+        for index in np.random.permutation(self.N):
         # Select a random monomer
-        index = np.random.randint(0,self.N)
-        moves = self.get_mc_moves()
-        # Shuffle moves to ensure randomness
-        np.random.shuffle(moves)
+            index = np.random.randint(0,self.N)
+            moves = self.get_mc_moves()
+            # Shuffle moves to ensure randomness
+            np.random.shuffle(moves)
 
-        current_energy = self.energy
-        old_position = self.pos[index].copy()
+            current_energy = self.energy
+            old_position = self.pos[index].copy()
 
-        for move in moves:
-            # print(f"checking move {move} for monomer {index}")
-            if self.is_valid_move(index,move):
-                # Update pos with new move 
-                self.pos[index] += np.array(move)
-                new_energy = self.calc_energies()
+            for move in moves:
+                # print(f"checking move {move} for monomer {index}")
+                if self.is_valid_move(index,move):
+                    # Update pos with new move 
+                    self.pos[index] += np.array(move)
+                    new_energy = self.calc_energies()
 
-                if self.metropolis_criterion(current_energy,new_energy):
-                    # print("move accepted")
-                    # Accept the new configuration
-                    self.energy = new_energy
-                    e2e = self.calc_e2e()
-                    rog = self.calc_rog()
-                    self.nn = self.find_nn()    # Update nn
+                    if self.metropolis_criterion(current_energy,new_energy):
+                        # print("move accepted")
+                        # Accept the new configuration
+                        self.energy = new_energy
+                        e2e = self.calc_e2e()
+                        rog = self.calc_rog()
+                        self.nn = self.find_nn()    # Update nn
 
-                    logger.log_all(self.energy,self.pos,e2e,rog)
-                    break
+                        logger.log_all(self.energy,self.pos,e2e,rog)
+                        break
+                    else:
+                        # print("Move rejected by Metropolis")
+                        # Revert move
+                        self.pos[index] = old_position
                 else:
-                    # print("Move rejected by Metropolis")
                     # Revert move
                     self.pos[index] = old_position
-            else:
-                # Revert move
-                self.pos[index] = old_position
-                
+                    
     def gen_unfolded_protein(self):
         """ Generates an unfolded protein """
-        # Reset the position 
-        self.pos = np.zeros((self.N,2),dtype=int)
 
         for i in range(self.N):
             self.pos[i] = [i,0]
