@@ -1,6 +1,6 @@
-from crank_nicolson import crank_nicolson
 import numpy as np
-from plotter import plot
+from crank_nicolson import crank_nicolson
+import plotter as plot
 N = 100
 T = 3000
 X0, XL = 0., 1.     # Domain Length
@@ -15,4 +15,5 @@ Xgrid = np.linspace(X0,XL,N)
 Tgrid = np.linspace(T0,TF,T)
 U0 = 1/dx
 U = crank_nicolson(N,T,alpha,U0)
-plot(U,T,Xgrid,Tgrid)
+# plot_c_and_n(U,T,Xgrid,Tgrid)
+plot.plot_c_and_n(U,T,Xgrid,Tgrid)
