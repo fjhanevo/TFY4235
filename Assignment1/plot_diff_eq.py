@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from crank_nicolson import * 
+from diffusion_equation import * 
 
 def plot_c_and_n():
     """ Plots the absorbant, reflective, and unbounded solutions """
@@ -41,6 +41,27 @@ def plot_c_and_n():
     plt.legend()
     plt.grid(True)
 
+    plt.show()
+
+def plot_total_mass():
+    """
+    Plots the total mass over time for the
+    absorbant and reflective boundary conditons
+    """
+    U1 = crank_nicolson(N,T,alpha,U0)
+    U2 = crank_nicolson(N,T,alpha,U0,'N') 
+    
+    abs_mass = total_mass(U1,dx)
+    refl_mass = total_mass(U2,dx)
+
+    plt.plot(Tgrid, abs_mass,label='Absorbant boundary condition')
+    plt.plot(Tgrid,refl_mass, label='Reflective boundary condition')
+
+    plt.title("Total mass over time")
+    plt.xlabel("Time $[s]$")
+    plt.ylabel("Mass $[kg]$")
+    plt.grid(True)
+    plt.legend()
     plt.show()
 
 
