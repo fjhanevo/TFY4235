@@ -70,8 +70,14 @@ def crank_nicolson(N,T,alpha,U0,bc=None):
     
     return U
 
+def total_mass(U,dx):
+    """ Computes the total mass for each step """
+    return np.sum(U,axis=1)*dx
 
 def unbounded_solution(u0,D,x,x0,t):
     """ Analytical solution for the unbounded problem"""
 
     return (u0/np.sqrt(4*np.pi*D*t))*np.exp(-(x-x0)**2/(4*D*t))
+
+
+
