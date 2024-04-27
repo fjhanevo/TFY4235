@@ -54,3 +54,6 @@ def crank_nicolson(N,T,alpha,U0,bc=None):
     
     return U
 
+def unbounded_solution(u0,D,x,x0,t):
+    """ Analytical solution for the unbounded problem"""
+    return u0/np.sqrt(4*np.pi*D*t)*np.exp(-(x-x0)/(4*D*t))
