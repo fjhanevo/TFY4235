@@ -24,6 +24,9 @@ class Logger:
         else:
             return np.mean(self.data[key])
 
+    def get_energy(self):
+        return np.mean(self.data['energy'])
+
 
     def get_data(self,key):
         """ Retrieve a specific logged data """
