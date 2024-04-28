@@ -135,9 +135,10 @@ class ProteinPlotting:
     
     def plot_average(self,key):
         """ Plots average values """
+        avg_val = self.log.get_average(key)
         plt.figure(figsize=(12,8))
         # plt.subplot(211)
-        plt.plot(self.log.get_average(key),label = f'Average {key}')
+        plt.plot(avg_val,label = f'Average {key}')
         plt.xlabel('Steps')
         plt.legend()
 
@@ -148,6 +149,28 @@ class ProteinPlotting:
         #
         plt.tight_layout()
         plt.show()
+
+    def plot_avg_e_rog(self):
+        """ Plots average values of E and RoG """
+        avg_E = self.log.get_energy()
+        avg_Rog = np.mean(self.log.data['radius_of_gyration']) 
+
+        plt.figure(figsize=(12,8))
+        plt.subplot(211)
+        plt.plot(avg_E,label='Average Energy')
+        plt.xlabel('Steps')
+        plt.legend()
+
+        plt.subplot(212)
+        plt.plot(avg_Rog, label='Average RoG')
+        plt.xlabel('Steps')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()
+
+
+
 
 
 
