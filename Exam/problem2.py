@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 """ 
 TFY4235 Computational Physics Exam 2024.
 Problem 2
@@ -47,20 +48,27 @@ def simulate_network_evolution(T,initial_state, steps):
 
     return np.array(evolution)
 
-def power_iteration(T_mat, steps):
+def power_iteration(T_mat, steps,tol=1e-10):
     """ Performs the power iteration algorithm to find the largest eigenvalues """
     # Select a random (uniform) vector
     b_k = np.random.rand(T_mat.shape[1])
+
+    b_k1_norm = 0
 
     for _ in range(steps):
         # Calculate the matrix by dot product
         b_k1 = np.dot(T_mat, b_k)
 
         # Calculate the norm
-        b_k1_norm = np.linalg.norm(b_k1)
+        b_k1_norm_new = np.linalg.norm(b_k1)
 
         # Re-normalize the vector
-        b_k = b_k1 / b_k1_norm
+        b_k = b_k1 / b_k1_norm_new
+
+        # Convergence check
+        if np.abs(b_k1_norm_new - b_k1_norm) < tol:
+            break
+        b_k1_norm = b_k1_norm_new
 
         # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
     eigval = np.dot(b_k.T, np.dot(T_mat,b_k)) / np.dot(b_k.T,b_k) 
@@ -68,10 +76,11 @@ def power_iteration(T_mat, steps):
         
     return eigval, eigvec
 
-def inverse_power_iteration(T_mat, steps,eps=1e-10):
+def inverse_power_iteration(T_mat, steps,tol=1e-10,eps=1e-10):
     """ Performs the inverse power iteration algorithm to find the smallest eigenvalues """
     # Select a random (uniform) vector
     b_k = np.random.rand(T_mat.shape[1])
+    b_k1_norm = 0
 
     # Regularization to avoid singular matrix
     T_inv = np.linalg.inv(T_mat+eps*np.eye(T_mat.shape[0]))
@@ -81,13 +90,20 @@ def inverse_power_iteration(T_mat, steps,eps=1e-10):
         b_k1 = np.dot(T_inv, b_k)
 
         # Calculate the norm
-        b_k1_norm = np.linalg.norm(b_k1)
+        b_k1_norm_new = np.linalg.norm(b_k1)
 
         # Re-normalize the vector
-        b_k = b_k1 / b_k1_norm
+        b_k = b_k1 / b_k1_norm_new
+
+        # Convergence check
+        if np.abs(b_k1_norm_new - b_k1_norm) < tol:
+            break
+
+        b_k1_norm = b_k1_norm_new
+
 
         # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
-    eigval = np.dot(b_k.T, np.dot(T, b_k)) / np.dot(b_k.T,b_k) 
+    eigval = np.dot(b_k.T, np.dot(T_mat, b_k)) / np.dot(b_k.T,b_k) 
     eigvec = b_k
     
     return eigval, eigvec
@@ -114,6 +130,52 @@ def find_eigenvalues(T,steps):
     print('Smallest eigenvector(iterative):', smallest_eigvec)
     print('Number of eigenvalues close to 1:', eigvals_to_one)
     print('Eigenvalues from numpy linalg library:',eigvals)
+
+def plot_method_comparison(T,steps):
+    """ Compares the computed solutions vs. numpy's solution """
+    largest_eigval,largest_eigvec = power_iteration(T,steps)
+    smallest_eigval,smallest_eigvec = inverse_power_iteration(T,steps)
+
+    # Get numpys functions to calculate eigenvalues and eigenvectors
+    eigvals, eigvecs = np.linalg.eig(T)
+
+    # Sort eigenvalues and corresponding eigenvectors
+    index_power_large = np.argsort(largest_eigval)[::-1]
+    index_power_small = np.argsort(smallest_eigval)[::-1]
+    index_numpy = np.argsort(eigvals)[::-1]
+
+    sorted_power_large = np.array(largest_eigval)[index_power_large]
+    sorted_power_small= np.array(smallest_eigval)[index_power_small]
+    sorted_numpy = np.array(eigvals)[index_numpy]
+
+    fig,ax = plt.subplots(2,1,figsize=(10,12))
+
+    # Plot eigenvalues
+    ax[0].plot(sorted_power_large, 'ro-', label='Power Iteration Largest Eigenvalues')
+    ax[0].plot(sorted_power_small, 'ro-',label='Power Iteration Smallest Eigenvalues')
+    ax[0].plot(sorted_numpy, 'bo-', label='Numpy Eigenvalues')
+    ax[0].title('Comparison of Eigenvalues')
+    ax[0].set_xlabel('Index')
+    ax[0].set_ylabel('Eigenvalue')
+    ax[0].legend()
+
+    # Plot the first few eigenvectors
+    num_vecs = min(len(largest_eigvec[0]),3)
+    for i in range(num_vecs):
+        ax[1].plot(largest_eigvec[:, index_power_large[i]], 'r-', 
+                   label=f'Power Iteration Largest Eigenvector {i+1}')
+        ax[1].plot(smallest_eigvec[:, index_power_small[i]], 'r-',
+                   label=f'Power Iteration Smallest Eigenvector {i+1}')
+        ax[1].plot(eigvecs[:, index_numpy[i]], 'b--',
+                   label=f'Numpy Eigenvector {i+1}')
+
+    ax[1].set_title('Comparison of the first few Eigenvectors')
+    ax[1].set_xlabel('Component')
+    ax[1].set_ylabel('Magnitude')
+    ax[1].legend()
+
+    plt.tight_layout()
+    plt.show()
 
 def verify_network_state(N,T):
     """
@@ -235,5 +297,6 @@ T = gen_T_matrix(N)
 # check_methods(N,T)
 N1 = 11
 N2 = 10
-disjointed_network_analyzation(N1,N2)
-# find_eigenvalues(T,100)
+# disjointed_network_analyzation(N1,N2)
+# find_eigenvalues(T,1000)
+plot_method_comparison(T,100)
