@@ -1,5 +1,4 @@
 import numpy as np
-
 """ 
 TFY4235 Computational Physics Exam 2024.
 Problem 2
@@ -53,7 +52,6 @@ def power_iteration(T_mat, steps):
     # Select a random (uniform) vector
     b_k = np.random.rand(T_mat.shape[1])
 
-
     for _ in range(steps):
         # Calculate the matrix by dot product
         b_k1 = np.dot(T_mat, b_k)
@@ -65,10 +63,10 @@ def power_iteration(T_mat, steps):
         b_k = b_k1 / b_k1_norm
 
         # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
-        eigval = np.dot(b_k.T, np.dot(T_mat,b_k)) / np.dot(b_k.T,b_k) 
-        eigvec = b_k
+    eigval = np.dot(b_k.T, np.dot(T_mat,b_k)) / np.dot(b_k.T,b_k) 
+    eigvec = b_k
         
-        return eigval, eigvec
+    return eigval, eigvec
 
 def inverse_power_iteration(T_mat, steps,eps=1e-10):
     """ Performs the inverse power iteration algorithm to find the smallest eigenvalues """
@@ -89,10 +87,10 @@ def inverse_power_iteration(T_mat, steps,eps=1e-10):
         b_k = b_k1 / b_k1_norm
 
         # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
-        eigval = np.dot(b_k.T, np.dot(T, b_k)) / np.dot(b_k.T,b_k) 
-        eigvec = b_k
-        
-        return eigval, eigvec
+    eigval = np.dot(b_k.T, np.dot(T, b_k)) / np.dot(b_k.T,b_k) 
+    eigvec = b_k
+    
+    return eigval, eigvec
 
 def find_eigenvalues(T,steps):
     largest_eigval,largest_eigvec = power_iteration(T,steps)
@@ -171,7 +169,71 @@ def gen_disjoint_T_matrix(N1,N2):
     
     return T
 
+def disjointed_network_analyzation(N1,N2):
+    """ 
+    Performs the computational study on a disjointed network.
+    Calculates the eigenvectors and eigenvalues of the disjointed
+    transformation matrix.
+    """
+
+    T = gen_disjoint_T_matrix(N1,N2)
+    steps = 100
+    find_eigenvalues(T,steps)
+
+
+def check_methods(N,T):
+    """ Direct inversion method for solving solving V(t) """
+    # Import necessary tools
+    import time
+    from scipy.linalg import lu_factor, lu_solve
+    from scipy.sparse.linalg import cg
+
+    # Define intial state vector 
+    V_t = np.array([1/i for i in range(1,N+1)])
+
+    # Method 1: Direct Inversion
+    t0 = time.time()
+    T_inv = np.linalg.inv(T)
+    V_t_dt = np.dot(T_inv,V_t)
+    V_t_5dt = np.linalg.matrix_power(T_inv,5) @ V_t
+    time_direct = time.time()-t0
+    
+    # Method 2: LU Decomposition
+    t0 = time.time()
+    lu, piv = lu_factor(T)
+    V_t_dt_lu = lu_solve((lu,piv),V_t)
+    V_t_5dt_lu = V_t_dt_lu.copy()
+    for _ in range(4):
+        V_t_5dt_lu = lu_solve((lu,piv), V_t_5dt_lu)
+    time_lu = time.time() - t0
+
+    # Method 3: Conjugate Gradient
+    t0 = time.time()
+    V_t_dt_cg, _ = cg(T,V_t,tol=1e-10)
+    
+    # Repeatedly apply CG to simulate t-5*dt
+    V_t_5dt_cg = V_t_dt_cg.copy()
+    for _ in range(4):
+        V_t_5dt_cg, _ = cg(T,V_t_5dt_cg,tol=1e-10)
+    time_cg = time.time() - t0
+
+    # Print results
+    print('Direct Inverion Time:', time_direct)
+    print('V(t-dt) by Direct Inversion:', V_t_dt)
+    print('V(t-5dt) by Direct Inversion:', V_t_5dt)
+
+    print('LU Decomposition Time:', time_lu)
+    print('V(t-dt) by LU Decomposition:', V_t_dt_lu)
+    print('V(t-5dt) by LU Decomposition:', V_t_5dt_lu)
+
+    print('Conjugate Gradient Time:', time_cg)
+    print('V(t-dt) by Conjugate Gradient:', V_t_dt_cg)
+    print('V(t-5dt) by Conjugate Gradient:', V_t_5dt_cg)
 
 N = 21
 T = gen_T_matrix(N)
-verify_network_state(N,T)
+# check_methods(N,T)
+N1 = 11
+N2 = 10
+disjointed_network_analyzation(N1,N2)
+# find_eigenvalues(T,100)
