@@ -92,21 +92,66 @@ def crank_nicolson(V0,dx,dt,Nx,Nt):
     
     return V_time
 
+def analytical_solution(V0,x,t,x0):
+    """ Implementation of the analytical solution """
+    # lamda = tau = 1.0
+    return (V0/np.sqrt(4*np.pi*t))*np.exp(-((x-x0)**2)/4*t-t)
+
+def test_analytical_solution(V0,x,t,x0):
+    pref = np.sqrt(4*np.pi*t)
+    V_analytical = np.zeros((len(x),len(t)))
+    t = t.reshape(1,-1)
+    for idx,i in enumerate(t):
+        # if i == 0:
+        #     V_analytical[:,idx] = 0
+        # else:
+        exp_part = np.exp(-((x-x0)**2).reshape(-1,1)/(4*t)-t)
+        V_analytical[:,idx] = V0/pref[idx]*exp_part.squeeze()
+    return V_analytical
+
+
+def plot_methods(X,V_explicit,V_implicit,V_cn,time_steps):
+    """ Plots the method in a 2x2 square for easy comparison """
+    fig, axs = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
     
-# V_time_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
-# V_time_implicit = implicit_euler(V0,dx,dt,Nx,Nt) 
+    # Flatten to make indexing easier
+    axs = axs.flatten()
+    # Plot information
+    # titles = ['Explicit Euler','Implicit Euler','Crank-Nicolson', 'Analytical Solution']
+    titles = ['Explicit Euler','Implicit Euler','Crank-Nicolson']
+
+    # v_matrices = [V_explicit,V_implicit,V_cn,V_analytical]
+    v_matrices = [V_explicit,V_implicit,V_cn]
+
+    # Plot each method in its subplot
+    for i, V in enumerate(v_matrices):
+        ax = axs[i]
+        for t in time_steps:
+            index = int(t*(Nt-1))
+            # ax.plot(X,V[:,index],label=f't={t*dt:.2f}s')
+            ax.plot(X,V[:,index],label=f't={t:.2f}s')
+        ax.set_title(titles[i])
+        ax.set_xlabel('Position [m]')
+        ax.set_ylabel('Voltage [V]')
+        ax.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
+V_implicit = implicit_euler(V0,dx,dt,Nx,Nt) 
 V_crank_nicolson = crank_nicolson(V0,dx,dt,Nx,Nt)
-plt.figure(figsize=(10,6))
-time_steps_to_plot = [0,int(Nt/4),int(Nt/2),int(3*Nt/4),Nt-1]
-for i in time_steps_to_plot:
-    plt.plot(X,V_crank_nicolson[:,i],label=f't={i*dt:.2f}s')
+# V_analytical = test_analytical_solution(V0,X,T,x0)
+# time_steps = [0,int(Nt/4),int(Nt/2),int(3*Nt/4),Nt-1]
+time_steps = [T[1],T[25],T[800]]
+plot_methods(X,V_explicit,V_implicit,V_crank_nicolson,time_steps)
 
-plt.title('Explicit Euler')
-plt.xlabel('Position [m]?')
-plt.ylabel('Voltage?')
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-
-
+# def plot_test(timestep):
+#     for t in timestep:
+#         # V = test_analytical_solution(V0,X,t,x0)
+#         plt.plot(X,V_analytical[:,t],label=f't={t}')
+#     plt.legend()
+#     plt.show()
+#
+# plot_test(time_steps)
