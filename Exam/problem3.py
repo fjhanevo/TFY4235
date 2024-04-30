@@ -28,8 +28,10 @@ V0 = np.exp((-(X-x0)**2)/(2*sigma**2))
 
 def explicit_euler(V0,dx,dt,Nx,Nt):
     """ Implementation of the Euler Explicit scheme for the cable equation """
-    # Create matrix to hold all time steps
+    # Create matrix to store results 
     V_time = np.zeros((Nx,Nt))
+    
+    # Apply initial condition
     V_time[:,0] = V0
     
     # Vectorize the operations to avoid double for-loop
@@ -45,26 +47,36 @@ def explicit_euler(V0,dx,dt,Nx,Nt):
     return V_time
 
 def implicit_euler(V0,dx,dt,Nx,Nt):
-    """ Implicit Euler scheme for the cable equation """
+    """ Implementation of the implicit Euler scheme for the cable equation """
+    # Import solve_banded to avoid having to invert a tridiagonal matrix
+    from scipy.linalg import solve_banded
     
-    alpha = 1*dt/(dx**2) # CFL number, D = 1
-    # Setup matrix for spatial discretization with Neumann bc's
-    diag = np.ones(Nx) * (1+2*alpha)
-    off_diag = np.ones(Nx-1)*(-alpha)
-    A = diags([diag,off_diag,off_diag], [0,-1,1], format='csr')
-    A[0,1] = -2*alpha
-    A[-1,-2] = -2*alpha
+    # CFL number
+    alpha = dt/(2*dx**2)
 
-    # Identity matrix for the l.h.s of the scheme
-    I = identity(Nx,format='csr')
+    # Create matrix to store results
     V_time = np.zeros((Nx,Nt))
+
+    # Apply initial condition
     V_time[:,0] = V0
 
+    
+    lower = np.ones(Nx-1) * (-alpha)
+    upper = np.ones(Nx-1) * (-alpha)
+    diagonal = np.ones(Nx) * (1 + 2 * alpha)
+
+    # Adjust boundary conditions for A if needed
+    # For Neumann BCs with no flux at the boundaries:
+    diagonal[0] = 1 + alpha
+    diagonal[-1] = 1 + alpha
+
+    # Store the matrix in a banded format for `solve_banded`
+    A_banded = np.vstack((np.append(0, upper), diagonal, np.append(lower, 0)))
+
     # Time stepping
-    for i in range(1,Nt):
-        b = V0 + dt * V0
-        V0 = spsolve(I+dt*A,b)
-        V_time[:,i] = V0
+    for n in range(1, Nt):
+        V_time[:, n] = solve_banded((1, 1), A_banded, V_time[:, n-1])
+
     return V_time
 
 def get_cn_matrices(Nx,dx,dt):
@@ -82,16 +94,17 @@ def get_cn_matrices(Nx,dx,dt):
     B = (alpha/2) * np.diag(diag[1:], -1) +\
         (alpha/2) * np.diag(diag[1:],1) +\
         (1-alpha) * np.diag(diag)
-    
-    A[0,0] = 1 + alpha/2
-    A[-1,-1] = 1 + alpha/2
-    B[0,0] = 1 - alpha/2
-    B[-1,-1] = 1 - alpha/2
+   
+    # Apply Neumann bc's
+    A[0,0] = 1 + alpha
+    A[-1,-1] = 1 + alpha
+    B[0,0] = 1 - alpha
+    B[-1,-1] = 1 - alpha
 
     return A,B
 
 def crank_nicolson(V0,dx,dt,Nx,Nt):
-    """ Crank-Nicolson scheme for the cable equation """
+    """ Implementation of the Crank-Nicolson scheme for the cable equation """
  
     # Initialize V_time to store results 
     V_time = np.zeros((Nx,Nt))
@@ -116,6 +129,7 @@ def analytical_solution(V0,x,t,x0):
 
 def plot_method(V,X,time_steps,title,filename=None):
     """ Plots the time evolution of a single method"""
+
     plt.figure(figsize=(10,6))
     for t in time_steps:
         index = int(t*(Nt-1))
@@ -124,6 +138,7 @@ def plot_method(V,X,time_steps,title,filename=None):
     plt.xlabel('Position [m]')
     plt.ylabel('Voltage [V]')
     plt.legend()
+
     if filename is not None:
         plt.savefig(filename)
     else:
@@ -192,6 +207,7 @@ dt_explicit = dx**2/Nx*10
 # print(alpha)
 V_explicit = explicit_euler(V0,dx,dt_explicit,Nx,Nt)
 V_implicit = implicit_euler(V0,dx,dt,Nx,Nt) 
+# V_implicit = test_implicit_euler(V0,dx,dt,Nx,Nt) 
 V_crank_nicolson = crank_nicolson(V0,dx,dt,Nx,Nt)
 V_t = 0.2
 # V_analytical = analytical_solution(V_t,X,T,x0)
