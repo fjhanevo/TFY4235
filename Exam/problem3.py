@@ -10,15 +10,18 @@ Problem 3.
 # Parameters
 Nx = 100 
 Nt = 1000
-a,b = 0.,1.
-x0 = 0.5
-sigma = 0.1
+a,b = 0.,10.
+t0,tf = 0., 1.
+# a,b = 0.,10.
+x0 = (b-a)/2 
+sigma =0.1 
 
 dx = (b-a)/Nx
-dt = dx**2 / 2
+# dt = dx**2 / 2
+dt = 1/Nt
 # Spatial grid
 X = np.linspace(a,b,Nx)
-T = np.linspace(a,b,Nt)
+T = np.linspace(t0,tf,Nt)
 
 # Initial condition 
 V0 = np.exp((-(X-x0)**2)/(2*sigma**2))
@@ -95,24 +98,12 @@ def crank_nicolson(V0,dx,dt,Nx,Nt):
 def analytical_solution(V0,x,t,x0):
     """ Implementation of the analytical solution """
     # lamda = tau = 1.0
-    return (V0/np.sqrt(4*np.pi*t))*np.exp(-((x-x0)**2)/4*t-t)
-
-def test_analytical_solution(V0,x,t,x0):
-    pref = np.sqrt(4*np.pi*t)
-    V_analytical = np.zeros((len(x),len(t)))
-    t = t.reshape(1,-1)
-    for idx,i in enumerate(t):
-        # if i == 0:
-        #     V_analytical[:,idx] = 0
-        # else:
-        exp_part = np.exp(-((x-x0)**2).reshape(-1,1)/(4*t)-t)
-        V_analytical[:,idx] = V0/pref[idx]*exp_part.squeeze()
-    return V_analytical
-
+    return (V0/np.sqrt(4*np.pi*t))*(np.exp(-((x-x0)**2)/(4*t-t)))
 
 def plot_methods(X,V_explicit,V_implicit,V_cn,time_steps):
     """ Plots the method in a 2x2 square for easy comparison """
-    fig, axs = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
+    # fig, axs = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
+    fig, axs = plt.subplots(2,2,figsize=(12,12))
     
     # Flatten to make indexing easier
     axs = axs.flatten()
@@ -134,6 +125,14 @@ def plot_methods(X,V_explicit,V_implicit,V_cn,time_steps):
         ax.set_xlabel('Position [m]')
         ax.set_ylabel('Voltage [V]')
         ax.legend()
+    ax = axs[-1]
+    for t in time_steps:
+        V = analytical_solution(V_t,X,t,x0)
+        ax.plot(X,V,label=f't={t:.2f}s')
+        ax.set_xlabel('Position [m]')
+        ax.set_ylabel('Voltage [V]')
+        ax.set_title('Analytical Solution')
+        ax.legend()
 
     plt.tight_layout()
     plt.show()
@@ -142,16 +141,11 @@ def plot_methods(X,V_explicit,V_implicit,V_cn,time_steps):
 V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
 V_implicit = implicit_euler(V0,dx,dt,Nx,Nt) 
 V_crank_nicolson = crank_nicolson(V0,dx,dt,Nx,Nt)
-# V_analytical = test_analytical_solution(V0,X,T,x0)
-# time_steps = [0,int(Nt/4),int(Nt/2),int(3*Nt/4),Nt-1]
-time_steps = [T[1],T[25],T[800]]
-plot_methods(X,V_explicit,V_implicit,V_crank_nicolson,time_steps)
+V_t = 0.2
+# V_analytical = analytical_solution(V_t,X,T,x0)
+time_steps = [T[1],T[25],T[50],T[800]]
+# time_steps = [int(Nt/4),int(Nt/2),int(3*Nt/4),Nt-1]
+# time_steps = [T[int(Nt/4)],T[int(Nt/2)],T[int(3*Nt/4)],T[Nt-1]]
+# time_steps = [T[int(Nt/8)],T[int(Nt/4)],T[int(Nt/2)],T[Nt-1]]
 
-# def plot_test(timestep):
-#     for t in timestep:
-#         # V = test_analytical_solution(V0,X,t,x0)
-#         plt.plot(X,V_analytical[:,t],label=f't={t}')
-#     plt.legend()
-#     plt.show()
-#
-# plot_test(time_steps)
+plot_methods(X,V_explicit,V_implicit,V_crank_nicolson,time_steps)
