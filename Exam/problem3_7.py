@@ -27,8 +27,9 @@ V_appl = -50    # [mV] change this for other tasks
 g_K = 5
 
 dx = (b-a)/Nx
-# dt = dx**2 / 2
-dt = 1/Nt
+# dx = 0.000001
+dt = dx**2 / (2*l**2)
+# dt = 1/Nt
 
 # Spatial grid
 X = np.linspace(a,b,Nx)
@@ -40,11 +41,17 @@ T = np.linspace(t0,tf,Nt)
 V0 = (V_appl-V_mem)*np.exp(-((X-x0)**2)/(2*l**2)) + V_mem
 
 
-def gNa(V,gamma,V_star):
+def gNa(V):
     """ Computes g_Na(V) """
+    global V_star, gamma
     return (100/(1+np.exp(gamma*(V_star-V))) + 1/5)
 
 def explicit_euler(V0,dx,dt,Nx,Nt):
+    """ Implementation of the Explicit Euler scheme to solve eq.15 """
+
+    global l,tau,g_K, V_K
+
+    # Store results
     V_time = np.zeros((Nx, Nt))
     
     # Apply initial condition
@@ -52,13 +59,22 @@ def explicit_euler(V0,dx,dt,Nx,Nt):
     
     # Vectorize the operations to avoid double for-loop
     for n in range(0, Nt - 1):
-        gNa_value = gNa(V_time[:, n], gamma, V_star)
-        d2V_dx2 = (V_time[2:, n] - 2 * V_time[1:-1, n] + V_time[:-2, n]) / dx**2
-        term1 = l**2 * d2V_dx2
-        term2 = (gNa_value[1:-1] / g_K) * ((V_time[1:-1, n] - V_Na) / gNa_value[1:-1] + (V_time[1:-1, n] - V_K) / g_K)
-        V_time[1:-1, n + 1] = V_time[1:-1, n] + dt * (term1 - term2 / tau)
+        # Compute the voltage-dependent sodium channel permeability for current time step
+        gNa_value = gNa(V_time[:, n])
 
-        # Neumann boundary conditions: dV/dx = 0 at x = a, b
+        # Compute the second spatial derivative using finite differences
+        d2V_dx2 = (V_time[2:, n] - 2 * V_time[1:-1, n] + V_time[:-2, n]) / dx**2
+
+        # Calculate the term related to diffusion effect
+        term1 = l**2 * d2V_dx2
+
+        # Calculate term involving channel permeabilities and Nernst potentials
+        term2 = (gNa_value[1:-1] / g_K) * ((V_time[1:-1, n] - V_Na) + (V_time[1:-1, n] - V_K))
+
+        # Update vals for the next time step using explicit Euler method
+        V_time[1:-1, n + 1] = V_time[1:-1, n] + (dt/tau)* (term1 + term2)
+
+        # Apply Neumann bc's 
         V_time[0, n + 1] = V_time[1, n + 1]  # l.h.s
         V_time[-1, n + 1] = V_time[-2, n + 1]  # r.h.s
 
@@ -83,7 +99,8 @@ def plot_method(V,X,time_steps,title,filename=None):
         plt.show()
 
 
-time_steps = [T[1],T[25],T[50],T[450],T[900]]
+# time_steps = [T[1],T[25],T[50],T[450],T[900]]
+time_steps = [0.0,0.2,0.4,0.6,0.8,1.]
 V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
 
 plot_method(V_explicit,X,time_steps,'test')
