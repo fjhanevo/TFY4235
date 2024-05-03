@@ -22,15 +22,11 @@ V_star = -40    # [mV]
 V_Na = 56      # [mV] Nernst 
 V_K = -76       # [mV] Nernst
 V_mem = -70     # [mV]
-# V_mem = -45
 
 V_appl = -50    # [mV] change this for other tasks
 g_K = 5
 
 dx = (b-a)/Nx
-# dx = 0.01
-# dt = dx**2 / (2*l**2)
-# dt = 1/Nt
 dt = 0.0001
 
 # Spatial grid
@@ -42,19 +38,14 @@ T = np.linspace(t0,tf,Nt)
 # Initial condition 
 V0 = (V_appl-V_mem)*np.exp(-((X-x0)**2)/(2*l**2)) + V_mem
 
-sodium_channel_index = int((0.25-a)/dx)
+sodium_channel_index = int((0.25-x0)/dx)
 
-# def gNa(V, sodium_channel_idx=None):
-#     """ Computes g_Na(V) with increased conductance at a specific index. """
-#     gNa_values = np.full_like(V, 100 / (1 + np.exp(gamma * (V_star - V))) + 1 / 5)
-#     if sodium_channel_idx is not None:
-#         gNa_values[sodium_channel_idx] = 1000 / (1 + np.exp(gamma * (V_star - V[sodium_channel_idx]))) + 1 / 5
-#     return gNa_values
-
-def gNa(V):
-    """ Computes g_Na(V) """
-    global V_star, gamma
-    return (100/(1+np.exp(gamma*(V_star-V))) + 1/5)
+def gNa(V, sodium_channel_idx=None):
+    """ Computes g_Na(V) with increased conductance at a specific index. """
+    gNa_values = np.full_like(V, 100 / (1 + np.exp(gamma * (V_star - V))) + 1 / 5)
+    if sodium_channel_idx is not None:
+        gNa_values[sodium_channel_idx] = 1000 / (1 + np.exp(gamma * (V_star - V[sodium_channel_idx]))) + 1 / 5
+    return gNa_values
 
 def explicit_euler(V0,dx,dt,Nx,Nt):
     """ Implementation of the Explicit Euler scheme to solve eq.15 """
@@ -70,8 +61,8 @@ def explicit_euler(V0,dx,dt,Nx,Nt):
     # Vectorize the operations to avoid double for-loop
     for n in range(0, Nt - 1):
         # Compute the voltage-dependent sodium channel permeability for current time step
-        gNa_value = gNa(V_time[:, n])
-        # gNa_value = gNa(V_time[:,n],sodium_channel_index)
+        # gNa_value = gNa(V_time[:, n])
+        gNa_value = gNa(V_time[:,n],sodium_channel_index)
 
         # Compute the second spatial derivative using finite differences
         d2V_dx2 = (V_time[2:, n] - 2 * V_time[1:-1, n] + V_time[:-2, n]) / dx**2
@@ -104,17 +95,16 @@ def find_min_impulse(Nx,Nt,a,b,dx,dt,threshold,V_mem):
             break
     return min_impulse
 
-def plot_method(V,X,time_steps,title,filename=None):
+def plot_method(V,X,time_steps,filename=None):
     """ Plots the time evolution of a single method"""
 
     plt.figure(figsize=(10,6))
     for t in time_steps:
         index = int(t*(Nt-1))
         plt.plot(X,V[:,index],label=f'{t=:.2f}s')
-    plt.title(title)
-    plt.xlabel('Position [m]')
-    plt.ylabel('Voltage [V]')
-    plt.legend()
+    plt.xlabel('x [m]',fontsize=18)
+    plt.ylabel('V(x,t) [V]',fontsize=18)
+    plt.legend(fontsize=15)
 
     if filename is not None:
         plt.savefig(filename)
@@ -128,7 +118,9 @@ time_steps = [0.0,0.2,0.4,0.6,0.8,1.]
 V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
 print(dx)
 print(dt)
-# threshold = -55
-# min_impulse = find_min_impulse(Nx, Nt, a, b, dx, dt, threshold, V_mem)
-# print(f"Minimum impulse strength to induce an action potential: {min_impulse} mV")
-plot_method(V_explicit,X,time_steps,'test')
+threshold = -65
+min_impulse = find_min_impulse(Nx, Nt, a, b, dx, dt, threshold, V_mem)
+print(f"Minimum impulse strength to induce an action potential: {min_impulse} mV")
+# plot_method(V_explicit,X,time_steps,'Figures/3_7_Vappl_30')
+plot_method(V_explicit,X,time_steps)
+
