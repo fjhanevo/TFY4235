@@ -1,30 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import diags, identity
-from scipy.sparse.linalg import spsolve
 """
 TFY4235 Computational Phyiscs Exam 2024.
-Problem 3.
+Problem 3.5
 """
 
 # Parameters
-Nx = 100 
-Nt = 1000
-a,b = 0.,10.
-t0,tf = 0., 1.
-# a,b = 0.,10.
-x0 = (b-a)/2 
-sigma =0.1 
+Nx = 100        # Spacial interval
+Nt = 1000       # Temporal interval 
+t0,tf = 0., 1.  # Temporal domain 
+a,b = 0.,10.    # Spacial domain
+x0 = (b-a)/2    # Midpoint
+sigma = 0.1     # Width of the gaussian impulse
+l = 1.0         # lambda value from task
+tau = 1.0       # tau value from task
 
-dx = (b-a)/Nx
-# dt = dx**2 / 2
-dt = 1/Nt
-# Spatial grid
-X = np.linspace(a,b,Nx)
-T = np.linspace(t0,tf,Nt)
+dx = (b-a)/Nx   # Spatial step size
+dt = (tf-t0)/Nt # Temporal step size
 
-# Initial condition 
-V0 = np.exp((-(X-x0)**2)/(2*sigma**2))
+X = np.linspace(a,b,Nx)     # Spatial grid
+T = np.linspace(t0,tf,Nt)   # Temporal grid
+
+def initial_condition(x):
+    """ Implementation of a narrow Gaussian beam as initial condition """
+    return  2.5/(np.sqrt(2*np.pi))*np.exp(-((x-x0)/sigma)**2)
 
 def explicit_euler(V0,dx,dt,Nx,Nt):
     """ Implementation of the Euler Explicit scheme for the cable equation """
@@ -52,7 +51,7 @@ def implicit_euler(V0,dx,dt,Nx,Nt):
     from scipy.linalg import solve_banded
     
     # CFL number
-    alpha = dt/(2*dx**2)
+    alpha = dt/(dx**2)
 
     # Create matrix to store results
     V_time = np.zeros((Nx,Nt))
@@ -65,12 +64,11 @@ def implicit_euler(V0,dx,dt,Nx,Nt):
     upper = np.ones(Nx-1) * (-alpha)
     diagonal = np.ones(Nx) * (1 + 2 * alpha)
 
-    # Adjust boundary conditions for A if needed
-    # For Neumann BCs with no flux at the boundaries:
+    # Neumann BCs with no flux at the boundaries:
     diagonal[0] = 1 + alpha
     diagonal[-1] = 1 + alpha
 
-    # Store the matrix in a banded format for `solve_banded`
+    # Store the matrix in a banded format for solve_banded
     A_banded = np.vstack((np.append(0, upper), diagonal, np.append(lower, 0)))
 
     # Time stepping
@@ -79,65 +77,33 @@ def implicit_euler(V0,dx,dt,Nx,Nt):
 
     return V_time
 
-def get_cn_matrices(Nx,dx,dt):
-    """
-    Initializes the A and B matrix used for the Crank-Nicolson scheme. 
-    Applies Neumann boundary conditions
-    """
-    diag = np.ones((Nx))
-    alpha = dt/(2*dx**2)
-
-    A = (-alpha/2) * np.diag(diag[1:], -1) +\
-        (-alpha/2) * np.diag(diag[1:],1) +\
-        (1+alpha)*np.diag(diag)
-
-    B = (alpha/2) * np.diag(diag[1:], -1) +\
-        (alpha/2) * np.diag(diag[1:],1) +\
-        (1-alpha) * np.diag(diag)
-   
-    # Apply Neumann bc's
-    A[0,0] = 1 + alpha
-    A[-1,-1] = 1 + alpha
-    B[0,0] = 1 - alpha
-    B[-1,-1] = 1 - alpha
-
-    return A,B
-
 def crank_nicolson(V0,dx,dt,Nx,Nt):
-    """ Implementation of the Crank-Nicolson scheme for the cable equation """
- 
-    # Initialize V_time to store results 
-    V_time = np.zeros((Nx,Nt))
+    """ Implementation of the Crank-Nicolson scheme, combining implicit and explicit schemes """
 
-    # Apply initial condition
-    V_time[:,0] = V0
+    V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
+    V_implicit = implicit_euler(V0,dx,dt,Nx,Nt)
 
-    # Get matrices
-    A, B = get_cn_matrices(Nx,dx,dt)
+    return 0.5* (V_explicit + V_implicit)
 
-    # Solve the equation
-    for i in range(Nt-1):
-        u = B@V_time[:,i]
-        V_time[:,i+1] = np.linalg.solve(A,u)
-    
-    return V_time 
+def analytical_solution(V0,x,t,l,tau,x0):
+    """ Implementation of the unbounded analytical solution """
 
-def analytical_solution(V0,x,t,x0):
-    """ Implementation of the analytical solution """
-    # lamda = tau = 1.0
-    return (V0/np.sqrt(4*np.pi*t))*(np.exp(-((x-x0)**2)/(4*t-t)))
+    exponent = -((x-x0)**2)/(4*(l**2/tau)*t) -t/tau
+    return (V0/np.sqrt(4*np.pi*(l**2/tau)*t))*np.exp(exponent)
 
 def plot_method(V,X,time_steps,title,filename=None):
-    """ Plots the time evolution of a single method"""
+    """ Plots the time evolution of a single method and compares it with the analytical solution """
 
     plt.figure(figsize=(10,6))
     for t in time_steps:
-        index = int(t*(Nt-1))
-        plt.plot(X,V[:,index],label=f't={t=:.2f}s')
-    plt.title(title)
-    plt.xlabel('Position [m]')
-    plt.ylabel('Voltage [V]')
-    plt.legend()
+        # index = int(t*(Nt-1))
+        index = int(t / (T[-1] / Nt))
+        V_Analytical = analytical_solution(V_t,X,t,l,tau,x0)
+        plt.plot(X,V[:,index],label=f'{title}: t={T[index]:.2f}s', linestyle='dashed')
+        plt.plot(X,V_Analytical,label=f'Analytical: t={t:.2f}s')
+    plt.xlabel(f'x [m]',fontsize=18)
+    plt.ylabel(f'V(x,t) [V]',fontsize=18)
+    plt.legend(fontsize=15)
 
     if filename is not None:
         plt.savefig(filename)
@@ -145,78 +111,15 @@ def plot_method(V,X,time_steps,title,filename=None):
         plt.tight_layout()
         plt.show()
 
-def plot_analytical(X,time_steps, filename=None):
-    """ Plots only the analytical solution """
-    for t in time_steps:
-        V = analytical_solution(V_t,X,t,x0)
-        plt.plot(X,V,label=f't={t:.2f}s')
-    plt.title('Analytical solution')
-    plt.xlabel('Position [m]')
-    plt.ylabel('Voltage [V]')
-    plt.legend()
-    if filename is not None:
-        plt.savefig(filename)
-    else:
-        plt.tight_layout()
-        plt.show()
 
-
-
-""" Keeping this here for comparison"""
-def plot_methods(X,V_explicit,V_implicit,V_cn,time_steps):
-    """ Plots the method in a 2x2 square for easy comparison """
-    # fig, axs = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
-    fig, axs = plt.subplots(2,2,figsize=(12,12))
-    
-    # Flatten to make indexing easier
-    axs = axs.flatten()
-    # Plot information
-    # titles = ['Explicit Euler','Implicit Euler','Crank-Nicolson', 'Analytical Solution']
-    titles = ['Explicit Euler','Implicit Euler','Crank-Nicolson']
-
-    # v_matrices = [V_explicit,V_implicit,V_cn,V_analytical]
-    v_matrices = [V_explicit,V_implicit,V_cn]
-
-    # Plot each method in its subplot
-    for i, V in enumerate(v_matrices):
-        ax = axs[i]
-        for t in time_steps:
-            index = int(t*(Nt-1))
-            # ax.plot(X,V[:,index],label=f't={t*dt:.2f}s')
-            ax.plot(X,V[:,index],label=f't={t:.2f}s')
-        ax.set_title(titles[i])
-        ax.set_xlabel('Position [m]')
-        ax.set_ylabel('Voltage [V]')
-        ax.legend()
-    ax = axs[-1]
-    for t in time_steps:
-        V = analytical_solution(V_t,X,t,x0)
-        ax.plot(X,V,label=f't={t:.2f}s')
-        ax.set_xlabel('Position [m]')
-        ax.set_ylabel('Voltage [V]')
-        ax.set_title('Analytical Solution')
-        ax.legend()
-
-    plt.tight_layout()
-    plt.show()
-    fig.savefig('test.png')
-
-# dx1 = 0.01
-dt_explicit = dx**2/Nx*10
-# alpha = dt_explicit/(2*dx**2)
-# print(alpha)
-V_explicit = explicit_euler(V0,dx,dt_explicit,Nx,Nt)
+ 
+V0 = initial_condition(X)
+V_explicit = explicit_euler(V0,dx,dt,Nx,Nt)
 V_implicit = implicit_euler(V0,dx,dt,Nx,Nt) 
-# V_implicit = test_implicit_euler(V0,dx,dt,Nx,Nt) 
 V_crank_nicolson = crank_nicolson(V0,dx,dt,Nx,Nt)
-V_t = 0.2
-# V_analytical = analytical_solution(V_t,X,T,x0)
-time_steps = [T[1],T[25],T[50],T[450],T[900]]
-# time_steps = [int(Nt/4),int(Nt/2),int(3*Nt/4),Nt-1]
-# time_steps = [T[int(Nt/4)],T[int(Nt/2)],T[int(3*Nt/4)],T[Nt-1]]
-# time_steps = [T[int(Nt/8)],T[int(Nt/4)],T[int(Nt/2)],T[Nt-1]]
-# plot_method(V_explicit,X,time_steps,'Explicit Euler')
-# plot_analytical(X,time_steps,'Figures/analytical')
-
-plot_methods(X,V_explicit,V_implicit,V_crank_nicolson,time_steps)
+V_t = 0.165 
+time_steps = [T[10], T[20], T[30], T[40], T[80],T[100]]
+plot_method(V_explicit,X,time_steps,'Explicit Euler','Figures/3_5_explicit.png')
+plot_method(V_implicit,X,time_steps,'Implicit Euler','Figures/3_5_implicit.png')
+plot_method(V_crank_nicolson,X,time_steps,'Crank-Nicolson','Figures/3_5_cn.png')
 
