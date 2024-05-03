@@ -13,19 +13,35 @@ def gen_T_matrix(N):
     """
 
     T = np.zeros((N,N))
-    
-    # Each node transfer its charge equally to the neighboring nodes
-    for i in range(N):
-        # Connect to preceeding nodes
-        T[i][(i-1)%N] = 0.25 
-        T[i][(i-2)%N] = 0.25 
-        # Connect to following nodes
-        T[i][(i+1)%N] = 0.25 
-        T[i][(i+2)%N] = 0.25 
 
+    # Fill the matrix according to the rules
+    for i in range(N):
+        # Define indicies of the four neighbors
+        neighbors = [(i - 2) % N, (i - 1) % N, (i + 1) % N, (i + 2) % N]
+
+        # Assign values to neighbors
+        for neighbor in neighbors:
+            T[i,neighbor] = 0.25
     return T
 
-def simulate_network_evolution(T,initial_state, steps):
+def graph_matrix(T):
+    """ Creates a graph of the transformation matrix T for visualization purposes """
+    import networkx as nx
+    # Create a graph from the transformation matrix
+    G = nx.Graph()
+    for i in range(N):
+        for j in range(N):
+            if T[i, j] > 0:
+                G.add_edge(i+1, j+1)  # +1 to have nodes 1-indexed
+
+    # Draw the graph
+    pos = nx.circular_layout(G)  # Circular layout for better visualization
+    plt.figure(figsize=(10, 10))
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=800, font_size=12, edge_color='grey')
+    # plt.savefig('Figures/n21_t_graph.png')
+    plt.show()
+
+def simulate_network_evolution(N, T, steps):
     """
     Simulates the evolution of the network
     Uses the transform matrix T, and accepts arbitrary
@@ -33,20 +49,32 @@ def simulate_network_evolution(T,initial_state, steps):
     """
     
     # Set initial condition
-    V_t = initial_state.copy()
+    V = np.random.rand(N) 
+
+    # Normalize
+    V = V / np.linalg.norm(V)
 
     # Empty list to track evolution
-    evolution = []
+    evolution = np.zeros((steps+1,N))
+    evolution[0] = V 
 
     # Iterate over time steps
-    for _ in range(steps):
+    for step in range(1,steps+1):
         # Update state vector by applying transform matrix
-        V_t = T @ V_t
+        V = T @ V
 
         # Log the new state
-        evolution.append(V_t)
+        evolution[step]=V
 
-    return np.array(evolution)
+    plt.figure(figsize=(14, 8))
+    for i in range(N):
+        plt.plot(range(steps + 1), evolution[:, i], label=f'Node {i+1}')
+    plt.xlabel('Time Steps',fontsize=18)
+    plt.ylabel('State',fontsize=18)
+    plt.legend(loc='upper right', ncol=3,fontsize=15)
+    plt.grid(True)
+    plt.savefig('Figures/network_evolution.png')
+    plt.show()
 
 def power_iteration(T_mat, steps,tol=1e-10):
     """ Performs the power iteration algorithm to find the largest eigenvalues """
@@ -70,7 +98,7 @@ def power_iteration(T_mat, steps,tol=1e-10):
             break
         b_k1_norm = b_k1_norm_new
 
-        # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
+    # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
     eigval = np.dot(b_k.T, np.dot(T_mat,b_k)) / np.dot(b_k.T,b_k) 
     eigvec = b_k
         
@@ -102,7 +130,7 @@ def inverse_power_iteration(T_mat, steps,tol=1e-10,eps=1e-10):
         b_k1_norm = b_k1_norm_new
 
 
-        # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
+    # Use Rayleigh quotient to get associated eigenvectors and eigenvalues
     eigval = np.dot(b_k.T, np.dot(T_mat, b_k)) / np.dot(b_k.T,b_k) 
     eigvec = b_k
     
@@ -131,106 +159,31 @@ def find_eigenvalues(T,steps):
     print('Number of eigenvalues close to 1:', eigvals_to_one)
     print('Eigenvalues from numpy linalg library:',eigvals)
 
-def plot_method_comparison(T,steps):
-    """ Compares the computed solutions vs. numpy's solution """
-    largest_eigval,largest_eigvec = power_iteration(T,steps)
-    smallest_eigval,smallest_eigvec = inverse_power_iteration(T,steps)
 
-    # Get numpys functions to calculate eigenvalues and eigenvectors
-    eigvals, eigvecs = np.linalg.eig(T)
 
-    # Sort eigenvalues and corresponding eigenvectors
-    index_power_large = np.argsort(largest_eigval)[::-1]
-    index_power_small = np.argsort(smallest_eigval)[::-1]
-    index_numpy = np.argsort(eigvals)[::-1]
-
-    sorted_power_large = np.array(largest_eigval)[index_power_large]
-    sorted_power_small= np.array(smallest_eigval)[index_power_small]
-    sorted_numpy = np.array(eigvals)[index_numpy]
-
-    fig,ax = plt.subplots(2,1,figsize=(10,12))
-
-    # Plot eigenvalues
-    ax[0].plot(sorted_power_large, 'ro-', label='Power Iteration Largest Eigenvalues')
-    ax[0].plot(sorted_power_small, 'ro-',label='Power Iteration Smallest Eigenvalues')
-    ax[0].plot(sorted_numpy, 'bo-', label='Numpy Eigenvalues')
-    ax[0].title('Comparison of Eigenvalues')
-    ax[0].set_xlabel('Index')
-    ax[0].set_ylabel('Eigenvalue')
-    ax[0].legend()
-
-    # Plot the first few eigenvectors
-    num_vecs = min(len(largest_eigvec[0]),3)
-    for i in range(num_vecs):
-        ax[1].plot(largest_eigvec[:, index_power_large[i]], 'r-', 
-                   label=f'Power Iteration Largest Eigenvector {i+1}')
-        ax[1].plot(smallest_eigvec[:, index_power_small[i]], 'r-',
-                   label=f'Power Iteration Smallest Eigenvector {i+1}')
-        ax[1].plot(eigvecs[:, index_numpy[i]], 'b--',
-                   label=f'Numpy Eigenvector {i+1}')
-
-    ax[1].set_title('Comparison of the first few Eigenvectors')
-    ax[1].set_xlabel('Component')
-    ax[1].set_ylabel('Magnitude')
-    ax[1].legend()
-
-    plt.tight_layout()
-    plt.show()
-
-def verify_network_state(N,T):
+def gen_disjoint_T_matrix(N1, N2):
     """
-    Verifies that the final state of the network evolution is 
-    independent on the inital state by using 3 different 
-    initial states
+    Generates a transformation matrix for two disjoint networks.
+    One network will have N1 nodes, and the other will have N2 nodes.
     """
-    init_states = {
-            'uniform': np.ones(N),
-            'random': np.random.rand(N),
-            'single_charged': np.zeros(N)
-            }
+    N = N1 + N2
+    T = np.zeros((N, N))
 
-    # Charge only the first node
-    init_states['single_charged'][0] = 1
-
-    final_state = {} 
-
-    steps = 100
-
-    # Run the simulation for each inital state and store the final state
-    for key, state in init_states.items():
-        evolution = simulate_network_evolution(T,state,steps)
-        # Get the final state from the evolution
-        final_state[key] = evolution[-1]
-
-    # Comparing all final states
-    all_close = all(np.allclose(final_state['uniform'], final_state[other], atol=1e-2)
-                    for other in ['random','single_charged'])
-    
-    print('Are all final states similar?', all_close)
-
-
-def gen_disjoint_T_matrix(N1,N2):
-    """ Generates a transfer matrix for a disjointed network """
-    
-    # Initialize T
-    T = np.zeros((N1+N2, N1+N2))
-
-    # First sub-network
+    # Fill the matrix for the first network
     for i in range(N1):
-        T[i][(i-1) % N1] = 0.25
-        T[i][(i-2) % N1] = 0.25
-        T[i][(i+1) % N1] = 0.25
-        T[i][(i+2) % N1] = 0.25
+        neighbors = [(i - 2) % N1, (i - 1) % N1, (i + 1) % N1, (i + 2) % N1]
+        for neighbor in neighbors:
+            T[i, neighbor] = 0.25
 
-    # Second sub-network, offset by N1
-    for i in range(N1,N1+N2):
-        T[i][(i-1) % (N1+N2)] = 0.25
-        T[i][(i-2) % (N1+N2)] = 0.25
-        T[i][(i+1) % (N1+N2)] = 0.25
-        T[i][(i+2) % (N1+N2)] = 0.25
-    
+    # Fill the matrix for the second network
+    offset = N1
+    for i in range(N2):
+        neighbors = [(i - 2) % N2, (i - 1) % N2, (i + 1) % N2, (i + 2) % N2]
+        for neighbor in neighbors:
+            T[offset + i, offset + neighbor] = 0.25
+
     return T
-
+    
 def disjointed_network_analyzation(N1,N2):
     """ 
     Performs the computational study on a disjointed network.
@@ -239,12 +192,29 @@ def disjointed_network_analyzation(N1,N2):
     """
 
     T = gen_disjoint_T_matrix(N1,N2)
-    steps = 100
-    find_eigenvalues(T,steps)
+    print(T)
+    # steps = 100
+    # find_eigenvalues(T,steps)
+    eigvals,_ = np.linalg.eig(T)
+    # index = eigvals.argsort()[::-1]
+    # eigvals = eigvals[index]
+
+    tol = 1e-8
+    eigvals_to_one = np.sum(np.isclose(eigvals,1,atol=tol))
+    print('Numpy eigvals: ', eigvals)
+    print()
+    print('Eigvals close to one: ',eigvals_to_one)
+
 
 
 def check_methods(N,T):
-    """ Direct inversion method for solving solving V(t) """
+    """ 
+    Compares the efficiency of 3 solvers of linear equations.
+    The methods used are:
+    Direct Inversion
+    LU Decomposition
+    Conjugate Gradient
+    """
     # Import necessary tools
     import time
     from scipy.linalg import lu_factor, lu_solve
@@ -280,23 +250,40 @@ def check_methods(N,T):
     time_cg = time.time() - t0
 
     # Print results
-    print('Direct Inverion Time:', time_direct)
-    print('V(t-dt) by Direct Inversion:', V_t_dt)
-    print('V(t-5dt) by Direct Inversion:', V_t_5dt)
 
     print('LU Decomposition Time:', time_lu)
-    print('V(t-dt) by LU Decomposition:', V_t_dt_lu)
-    print('V(t-5dt) by LU Decomposition:', V_t_5dt_lu)
+
+    error_dt = calculate_errors(V_t_dt_lu, V_t_dt)
+    error_5dt = calculate_errors(V_t_5dt_lu, V_t_5dt)
+
+    error_cg_dt = calculate_errors(V_t_dt_lu, V_t_dt_cg)
+    error_cg_5dt = calculate_errors(V_t_5dt_lu, V_t_5dt_cg)
+
+    # Print results
+    print('Direct Inversion Time:', time_direct)
+    print('Direct Inversion Errors for V(t-dt):', error_dt)
+    print('Direction inversion Errors for V(t-5dt):', error_5dt)
 
     print('Conjugate Gradient Time:', time_cg)
-    print('V(t-dt) by Conjugate Gradient:', V_t_dt_cg)
-    print('V(t-5dt) by Conjugate Gradient:', V_t_5dt_cg)
+    print('Conjugate Gradient Errors for V(t-dt):', error_cg_dt)
+    print('Conjugate Gradient Errors for V(t-5dt):', error_cg_5dt)
+
+
+def calculate_errors(ref, comp):
+    """ Calculates the error for the methods based on a reference """
+    abs_error = np.abs(ref - comp)
+    rel_error = abs_error / np.abs(ref)
+    return np.mean(abs_error), np.mean(rel_error)
 
 N = 21
 T = gen_T_matrix(N)
-# check_methods(N,T)
-N1 = 11
-N2 = 10
+check_methods(N,T)
+# N1 = 11
+# N2 = 10
 # disjointed_network_analyzation(N1,N2)
-# find_eigenvalues(T,1000)
-plot_method_comparison(T,100)
+# T = gen_disjoint_T_matrix(N1,N2)
+# find_eigenvalues(T,100)
+# plot_method_comparison(T,100)
+# graph_matrix(T)
+# simulate_network_evolution(N,T,100)
+# verify_network_state(N,T,100)
